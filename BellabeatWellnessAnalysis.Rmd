@@ -1,0 +1,157 @@
+---
+title: "Bellabeat Wellness Analysis"
+author: "Seema Chavesta"
+date: "2025-12-15"
+output: html_document
+---
+
+```{r setup_new, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ask: Business Task
+
+The objective of this analysis is to identify trends in smart device usage
+using Fitbit fitness tracker data and apply these insights to Bellabeat
+products in order to inform data-driven marketing strategies.
+
+Key questions:
+- What are trends in smart device usage?
+- How could these trends apply to Bellabeat customers?
+- How could these trends influence Bellabeat marketing strategy?
+
+## Prepare: Data Source
+
+This analysis uses the **FitBit Fitness Tracker Data** (CC0: Public Domain),
+made available via Kaggle by Mobius.
+
+- Daily activity data (steps, calories, activity intensity)
+- Daily sleep data (minutes asleep, time in bed)
+- Data collected from 30 Fitbit users between April–May 2016
+
+Only daily-level datasets were used to focus on high-level behavioral trends.
+
+## Process and Data Cleaning
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+
+```
+
+### Importing the data
+```{r data-import}
+daily_activity <- read_csv("raw_data/dailyActivity_merged.csv") %>%
+  clean_names() %>%
+  mutate(activity_date = mdy(activity_date))
+
+sleep_day <- read_csv("raw_data/sleepDay_merged.csv") %>%
+  clean_names() %>%
+  mutate(
+    sleep_day = mdy_hms(sleep_day),
+    sleep_date = as.Date(sleep_day)
+  )
+
+ 
+
+```
+The datasets were cleaned by:
+- Standardizing column names
+- Converting date fields to proper date formats
+- Removing unnecessary columns for analysis
+
+## Analyze: Smart Device Usage Trends
+
+```{r daily-summary}
+daily_summary <- daily_activity %>%
+  mutate(
+    weekday = wday(activity_date, label = TRUE),
+    total_active_minutes =
+      lightly_active_minutes + fairly_active_minutes + very_active_minutes
+  )
+
+```
+
+### Visualization 1: Steps by weekday
+### Average Steps by Day of Week
+
+```{r steps-by-weekday, fig.width=7, fig.height=5}
+daily_summary %>%
+  group_by(weekday) %>%
+  summarise(avg_steps = mean(total_steps, na.rm = TRUE)) %>%
+  ggplot(aes(x = weekday, y = avg_steps)) +
+  geom_col(fill = "steelblue") +
+  labs(
+    title = "Average Steps by Day of Week",
+    x = "Day of Week",
+    y = "Average Steps"
+  )
+
+```
+Users tend to be more active on certain weekdays, indicating consistent
+weekly behavior patterns in smart device usage
+
+
+## Sleep and Activity Relationship
+
+```{r merge-sleep-activity}
+sleep_clean <- sleep_day %>%
+  select(id, sleep_date, total_minutes_asleep, total_time_in_bed)
+
+sleep_activity <- daily_summary %>%
+  inner_join(
+    sleep_clean,
+    by = c("id" = "id", "activity_date" = "sleep_date")
+  ) %>%
+  mutate(sleep_efficiency = total_minutes_asleep / total_time_in_bed)
+
+```
+
+### Visualization 2: Sleep efficiency distribution
+
+```{r sleep-efficiency}
+ggplot(sleep_activity, aes(x = sleep_efficiency)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+  labs(
+    title = "Distribution of Sleep Efficiency",
+    x = "Sleep Efficiency",
+    y = "Number of Days"
+  )
+
+```
+
+Most users demonstrate high sleep efficiency, though variability exists,
+suggesting opportunities for personalized sleep insights.
+
+## Share: Key Findings
+
+- Smart device users show consistent daily activity patterns, with
+  higher step counts on specific weekdays.
+- Users spend significantly more time sedentary than active, highlighting
+  opportunities for wellness interventions.
+- Sleep efficiency is generally high (average ~92%), though variability
+  exists across users and days.
+- Moderate daily activity is associated with improved sleep efficiency,
+  reinforcing the importance of balanced wellness habits.
+
+## Act: Marketing Recommendations
+
+1. **Promote Sleep Quality Features**
+   - Emphasize sleep efficiency insights within the Bellabeat app.
+   - Encourage consistent sleep routines using smart notifications.
+
+2. **Encourage Light, Sustainable Activity**
+   - Target highly sedentary users with gentle movement reminders.
+   - Position Bellabeat as a habit-building wellness companion.
+
+3. **Highlight Holistic Wellness**
+   - Market Bellabeat as a balance of activity, rest, and mindfulness.
+   - Align messaging with long-term health rather than extreme fitness.
+
+
+
+
+
+
+
